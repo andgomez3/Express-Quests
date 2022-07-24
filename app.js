@@ -14,24 +14,77 @@ connection.connect((err) => {
 
 app.use(express.json());
 
-app.get("/api/movies", (req, res) => {
-  connection.query("SELECT * FROM movies", (err, result) => {
+app.get("/api/movies/", (req, res) => {
+  let sql = 'SELECT * from movies';
+  const sqlValues = []; 
+
+  if (req.query.color) {
+    sql += ' WHERE color = ?';
+    sqlValues.push(req.query.color);
+  }
+
+  if (req.query.max_duration) {
+    if (req.query.color) {
+      sql += " AND duration <= ?;";
+    } else {
+      sql += " WHERE duration <= ?";
+    }
+
+    sqlValues.push(req.query.max_duration);
+  }
+
+  connection.query(sql, sqlValues, (err, result) => {
     if (err) {
       console.error(err);
-      res.status(500).send("Error retrieving data from database");
+      res.status(500).send("Error retrieving movies from database");
     } else {
       res.json(result);
     }
   });
 });
 
-app.get("/api/users", (req, res) => {
-  connection.query("SELECT * FROM users", (err, result) => {
+app.get("/api/movies/:id", (req, res) => {
+  const movieId = req.params.id;
+  connection.query("SELECT * FROM movies WHERE id = ?", [movieId], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error retrieving data from database");
+    } else if (result.length === 0) {
+      res.status(404).send("Movies not found");
+    } else {
+      res.json(result[0]);
+    }
+    }
+  );
+});
+
+app.get("/api/users/", (req, res) => {
+  let sql = 'SELECT * FROM users';
+  const sqlValues = [];
+  if (req.query.language) {
+    sql += " WHERE language = ?";
+    sqlValues.push(req.query.language);
+  }
+  connection.query(sql, sqlValues, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send(`An error occured : ${err.message}`);
+    } else {
+      res.json(result);
+    }
+  });
+});
+
+app.get("/api/users/:id", (req, res) => {
+  const userId = req.params.id;
+  connection.query("SELECT * FROM users WHERE id = ?", [userId], (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).send("Error retrieving users from database");
+    } else if (result.length === 0) {
+      res.status(404).send("User not found");
     } else {
-      res.json(result);
+      res.json(result[0]);
     }
   });
 });
